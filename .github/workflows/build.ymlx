@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    # every day at 6am & 6pm pacific
+    - cron: "0 1,13 * * *"
+jobs:
+  build:
+    strategy:
+      matrix:   
+          os: [ubuntu-latest, macos-10.15]
+          container-runtime: ['', 'containerd']
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Tools for MacOs
+        if: matrix.os == 'macos-10.15'
+        run: |
+          brew install docker-machine docker
+          sudo docker --version
+          VBoxManage --version
+          sysctl hw.physicalcpu hw.logicalcpu 
+        continue-on-error: true
+      - name: Install Kubectl
+        uses: azure/setup-kubectl@v1
+      - name: Start minikube
+        uses: medyagh/setup-minikube@latest
+        with:
+          container-runtime: ${{ matrix.container-runtime }}
+      - name: Start minikube Again for fun
+        uses: medyagh/setup-minikube@latest
+        with:
+          container-runtime: ${{ matrix.container-runtime }}
+      - name: Try the cluster !
+        run: kubectl get pods -A
+      - name: Use Docker-Env Feature
+        if: matrix.container-runtime == ''
+        run: | 
+          export SHELL=/bin/bash
+          eval $(minikube -p minikube docker-env)
+          docker images
+      - name: Use Podman-Env Feature
+        if: matrix.container-runtime == 'crio'
+        run: | 
+          export SHELL=/bin/bash
+          eval $(minikube -p minikube podman-env)
+          minikube ssh podman images
+
