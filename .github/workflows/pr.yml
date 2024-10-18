@@ -10,7 +10,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        repository: rxantony/test-minikube-example
+        repository: rxantony/test-minikube-example 
     #- name: Start minikube
     #  uses: medyagh/setup-minikube@latest
     - name: Try the cluster!
